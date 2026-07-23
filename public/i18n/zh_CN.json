@@ -27,6 +27,11 @@
         "compileError": "Typst 编译有错。请查看预览页签和你的 Typst 源码。",
         "openDocFirst": "请先打开一个文档。",
         "timeout": "tinymist 预览未及时启动。检查 tinymist 路径和控制台日志。",
-        "exited": "tinymist 异常退出。查看控制台([tinymist] 日志)了解详情。"
+        "exited": "tinymist 异常退出。查看控制台([tinymist] 日志)了解详情。",
+        "fetchFailed": "下载 tinymist 失败。请检查网络或手动安装后在设置配路径。"
+    },
+    "fetcher": {
+        "downloading": "正在下载 tinymist...",
+        "downloaded": "tinymist 就绪。"
     }
 }

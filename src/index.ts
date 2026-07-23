@@ -2,6 +2,7 @@ import { Plugin, showMessage, getFrontend, openTab, getAllEditor } from "siyuan"
 import "./index.scss";
 
 import { TinymistManager, TinymistNotFoundError, TinymistPortInUseError, PreviewSession, TinymistManagerOptions } from "./tinymist/manager";
+import { ensureTinymistBinary, FetchError } from "./tinymist/fetcher";
 import { createPreviewTabSpec, PREVIEW_TAB_TYPE, PreviewTabData } from "./preview/tab";
 import { AnchorResolver, AnchorError } from "./mapper/anchor";
 import { NoTypstContentError, MaterializedTyp } from "./mapper/block-to-typ";
@@ -137,6 +138,30 @@ export default class SiYuanTinymistPlugin extends Plugin {
             return;
         }
 
+        // 确保 tinymist 二进制可用:用户设置路径 > PATH > 首次下载到 <pluginData>/bin/。
+        let binaryPath = this.settings.tinymistPath;
+        try {
+            const ensured = await ensureTinymistBinary(this.settings.tinymistPath, this.data.basePath, (d, t) => {
+                const pct = t > 0 ? Math.floor((d / t) * 100) : 0;
+                showMessage(`[siyuan-tinymist] downloading tinymist... ${pct}%`, 1500);
+            });
+            binaryPath = ensured.binaryPath;
+            if (ensured.source === "downloaded") {
+                showMessage(`[siyuan-tinymist] tinymist downloaded to ${ensured.binaryPath}`, 3000);
+            }
+            // 下载/PATH 命中后,若与当前 manager 配置不同则重建。
+            if (binaryPath !== this.settings.tinymistPath) {
+                this.tinymist = new TinymistManager({
+                    binaryPath,
+                    dataPlaneHost: this.settings.dataPlaneHost || undefined,
+                    extraArgs: this.settings.extraArgs ? this.settings.extraArgs.split(/\s+/).filter(Boolean) : undefined,
+                });
+            }
+        } catch (err) {
+            this.reportError(err);
+            return;
+        }
+
         // 清场:停旧会话 + 删旧物化产物,保证「当前文档」语义。
         this.tinymist.stop();
         this.materialized?.cleanup();
@@ -220,6 +245,8 @@ export default class SiYuanTinymistPlugin extends Plugin {
         let msg: string;
         if (err instanceof TinymistNotFoundError) {
             msg = e.notFound ?? err.message;
+        } else if (err instanceof FetchError) {
+            msg = err.message;
         } else if (err instanceof TinymistPortInUseError) {
             msg = e.portInUse ?? err.message;
         } else if (err instanceof NoTypstContentError) {

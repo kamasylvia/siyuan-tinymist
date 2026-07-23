@@ -27,6 +27,11 @@
         "compileError": "Typst compiled with errors. Check the preview tab and your Typst source.",
         "openDocFirst": "Please open a document first.",
         "timeout": "tinymist preview did not start in time. Check the tinymist path and console logs.",
-        "exited": "tinymist exited unexpectedly. See console ([tinymist] logs) for details."
+        "exited": "tinymist exited unexpectedly. See console ([tinymist] logs) for details.",
+        "fetchFailed": "Failed to download tinymist. Check network or install manually and set path in settings."
+    },
+    "fetcher": {
+        "downloading": "Downloading tinymist...",
+        "downloaded": "tinymist ready."
     }
 }

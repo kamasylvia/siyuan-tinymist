@@ -178,7 +178,7 @@
 - [x] 错误处理(起步) —— `reportError()` 按 `TinymistNotFoundError` 等给可操作文案
 - [ ] preview tab + WebSocket SVG 渲染 —— 当前用 iframe 嵌 tinymist 自带前端(复用其 WASM 渲染 + 双向同步);自渲染 SVG delta 待策略 3 评估
 - [x] block → `main.typ` 物化(策略 1) —— `src/mapper/block-to-typ.ts`:`materializeDocToTyp(docId, pluginDataDir)` 经 `/api/export/exportMdContent`(yfm:false)拿 markdown,默认抽 `​```typst` 代码块拼成 main.typ(对齐 Clouder0 先例 + 思源里用 typst 代码块写 Typst 的实际用法),无 typst 块时降级为轻量 md→typst 转换(去 IAL);产物写 `<pluginDataDir>/tinymist-tmp/<rand>/main.typ`,返回 cleanup。`src/index.ts` 已去掉临时 prompt UX,改取 `getAllEditor()[0].protyle.block.rootID` 当前文档自动物化
-- [ ] 入口锚点 4 层解析 + UI —— 待落地 `src/mapper/anchor.ts`
+- [x] 入口锚点 4 层解析 + UI —— `src/mapper/anchor.ts`:`AnchorResolver` 4 层 resolve(IAL `custom-typst-root` 绝对路径 > 会话 pin > 自动探测占位 > 物化当前文档),IAL 经 `/api/attr/getBlockAttrs` 读、`/api/attr/setBlockAttrs` 写;preview tab 工具栏 pin 按钮(`src/preview/tab.ts`)弹菜单设/清会话 pin(`resolver.setPin/clearPin`),pin 高亮态随状态更新
 - [ ] 设置页(tinymist 路径、端口、渲染模式) —— `src/libs/setting-utils.ts` 已留,待接
 - [ ] 本地化(中英) —— i18n key 已起骨架,待补全
 - [ ] README + 使用文档

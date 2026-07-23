@@ -3,7 +3,8 @@ import "./index.scss";
 
 import { TinymistManager, TinymistNotFoundError, PreviewSession } from "./tinymist/manager";
 import { createPreviewTabSpec, PREVIEW_TAB_TYPE, PreviewTabData } from "./preview/tab";
-import { materializeDocToTyp, MaterializedTyp, NoTypstContentError } from "./mapper/block-to-typ";
+import { AnchorResolver, AnchorError } from "./mapper/anchor";
+import { NoTypstContentError, MaterializedTyp } from "./mapper/block-to-typ";
 
 /**
  * siyuan-tinymist
@@ -24,6 +25,8 @@ export default class SiYuanTinymistPlugin extends Plugin {
     private isDesktop: boolean = true;
     /** tinymist 进程管理器(仅桌面端实例化)。 */
     private tinymist: TinymistManager | null = null;
+    /** 入口锚点解析器(4 层:IAL > pin > 自动探测 > 物化)。 */
+    private resolver: AnchorResolver | null = null;
     /** 当前物化产物 cleanup;重物化/卸载时调。 */
     private materialized: MaterializedTyp | null = null;
 
@@ -44,6 +47,7 @@ export default class SiYuanTinymistPlugin extends Plugin {
         }
 
         this.tinymist = new TinymistManager();
+        this.resolver = new AnchorResolver({ pluginDataDir: this.data.basePath });
 
         // topbar 按钮:点击触发 preview 当前文档。
         this.addTopBar({
@@ -81,17 +85,14 @@ export default class SiYuanTinymistPlugin extends Plugin {
     /**
      * 对当前打开的文档启动 preview。
      *
-     * 策略 1(单文件 = 一 Typst 入口):
-     * 1. 取当前文档 rootID(经 `getAllEditor`)。
-     * 2. `materializeDocToTyp` 物化成 `<pluginDataDir>/tinymist-tmp/<rand>/main.typ`
-     *    (默认抽 `​```typst` 代码块;无则报 NoTypstContentError)。
-     * 3. `TinymistManager.start` spawn tinymist preview 该入口。
-     * 4. openTab 打开 preview tab。
+     * 入口经 `AnchorResolver` 按 4 层优先级解析(见 `src/mapper/anchor.ts`):
+     * IAL custom-typst-root > 会话 pin > 自动探测(占位) > 物化当前文档。
+     * 命中物化层时产物落 `<pluginDataDir>/tinymist-tmp/<rand>/main.typ`。
      *
-     * 重物化(文档变了/再次点击):先 stop 旧会话 + cleanup 旧临时文件。
+     * 重物化(文档变了/再次点击):先 stop 旧会话 + cleanup 旧物化产物。
      */
     private async openPreviewForCurrentDoc(): Promise<void> {
-        if (!this.isDesktop || !this.tinymist) {
+        if (!this.isDesktop || !this.tinymist || !this.resolver) {
             showMessage(this.i18n.desktopOnly);
             return;
         }
@@ -110,13 +111,22 @@ export default class SiYuanTinymistPlugin extends Plugin {
         showMessage(this.i18n.loadingPlugin ?? "Starting tinymist...", 3000);
 
         try {
-            const typ = await materializeDocToTyp(docId, this.data.basePath);
-            this.materialized = typ;
+            const entry = await this.resolver.resolve(docId);
+            // 物化层命中时接管 cleanup;其他层(IAL/pin)无临时产物。
+            if (entry.cleanup) {
+                // cleanup 包一层以更新 this.materialized 引用。
+                const inner = entry.cleanup;
+                this.materialized = {
+                    entryPath: entry.entryFile,
+                    rootDir: entry.rootDir,
+                    cleanup: inner,
+                } as MaterializedTyp;
+            }
 
-            const session = await this.tinymist.start(typ.entryPath, typ.rootDir, 15000);
-            this.openPreviewTab(session);
+            console.log(`[tinymist] entry resolved via ${entry.source}: ${entry.entryFile}`);
+            const session = await this.tinymist.start(entry.entryFile, entry.rootDir, 15000);
+            this.openPreviewTab(session, docId);
         } catch (err) {
-            // 物化/spawn 失败时清掉已建的临时产物。
             this.materialized?.cleanup();
             this.materialized = null;
             this.reportError(err);
@@ -138,11 +148,13 @@ export default class SiYuanTinymistPlugin extends Plugin {
         return rootID ?? null;
     }
 
-    /** 打开(或聚焦)preview tab。 */
-    private openPreviewTab(session: PreviewSession): void {
+    /** 打开(或聚焦)preview tab;透传 resolver + docId 供 pin UI。 */
+    private openPreviewTab(session: PreviewSession, docId: string): void {
         const data: PreviewTabData = {
             previewUrl: session.previewUrl,
             entryName: undefined,
+            resolver: this.resolver ?? undefined,
+            docId,
         };
         openTab({
             app: this.app,
@@ -162,6 +174,8 @@ export default class SiYuanTinymistPlugin extends Plugin {
         if (err instanceof TinymistNotFoundError) {
             msg = `tinymist not found. Install it (e.g. \`cargo install tinymist\` or download from GitHub releases) and set the path in plugin settings.`;
         } else if (err instanceof NoTypstContentError) {
+            msg = err.message;
+        } else if (err instanceof AnchorError) {
             msg = err.message;
         } else if (err instanceof Error) {
             msg = err.message;

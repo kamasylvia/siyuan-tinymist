@@ -10,6 +10,15 @@
     background: var(--b3-theme-background, #fff);
 }
 
+.siyuan-tinymist-preview__toolbar {
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--b3-border-color, #eee);
+}
+
+.siyuan-tinymist-preview__pin:hover {
+    color: var(--b3-theme-primary, #1890ff);
+}
+
 .siyuan-tinymist-preview__wrap {
     flex: 1;
     min-height: 0;

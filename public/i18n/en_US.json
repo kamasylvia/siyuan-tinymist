@@ -19,5 +19,14 @@
         "extraArgsDesc": "Space-separated extra args passed to `tinymist preview` (e.g. --invert-colors=auto).",
         "save": "Save",
         "cancel": "Cancel"
+    },
+    "errors": {
+        "notFound": "tinymist not found. Install it (cargo install tinymist or GitHub releases) and set the path in settings.",
+        "portInUse": "Port already in use. Set Preview server host:port to 127.0.0.1:0 (random) in settings, or free the port.",
+        "noTypstContent": "No ```typst code blocks found. Add one or switch Materialize mode to markdown.",
+        "compileError": "Typst compiled with errors. Check the preview tab and your Typst source.",
+        "openDocFirst": "Please open a document first.",
+        "timeout": "tinymist preview did not start in time. Check the tinymist path and console logs.",
+        "exited": "tinymist exited unexpectedly. See console ([tinymist] logs) for details."
     }
 }

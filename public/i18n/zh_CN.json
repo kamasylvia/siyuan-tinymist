@@ -19,5 +19,14 @@
         "extraArgsDesc": "透传给 `tinymist preview` 的额外参数,空格分隔(如 --invert-colors=auto)。",
         "save": "保存",
         "cancel": "取消"
+    },
+    "errors": {
+        "notFound": "未找到 tinymist。请安装(cargo install tinymist 或 GitHub releases)并在设置里配路径。",
+        "portInUse": "端口被占用。在设置里把预览服务 host:port 改成 127.0.0.1:0(随机端口),或释放占用端口。",
+        "noTypstContent": "未找到 ```typst 代码块。请添加一个,或把物化模式切到 markdown。",
+        "compileError": "Typst 编译有错。请查看预览页签和你的 Typst 源码。",
+        "openDocFirst": "请先打开一个文档。",
+        "timeout": "tinymist 预览未及时启动。检查 tinymist 路径和控制台日志。",
+        "exited": "tinymist 异常退出。查看控制台([tinymist] 日志)了解详情。"
     }
 }

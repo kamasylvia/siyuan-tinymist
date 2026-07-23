@@ -178,14 +178,14 @@
 - [x] tinymist 进程管理(spawn + 生命周期 + 配置)—— `src/tinymist/manager.ts`,`TinymistManager` 类:start/stop/isRunning/getSession,spawn `tinymist preview <entry> --data-plane-host=127.0.0.1:0 --partial-rendering`,解析 stdout `Static/Data plane server listening on:` 抓 preview URL,错误分类(NotFound/Spawn/Exited/Timeout)
 - [x] preview tab 骨架 —— `src/preview/tab.ts`,`createPreviewTabSpec()` 经 `Plugin.addTab` 注册,init 时塞 iframe 指向 tinymist 前端页(reflexo WASM);`src/index.ts` topbar + command 接线,`openPreviewForCurrentDoc()` 跑通 spawn→tab 链路(临时 UX:prompt 填入口路径)
 - [x] 仅桌面端守卫 —— `getFrontend()` 判 desktop/desktop-window,移动端只 showMessage 不挂功能
-- [x] 错误处理(起步) —— `reportError()` 按 `TinymistNotFoundError` 等给可操作文案
+- [x] 错误处理 —— `src/tinymist/manager.ts` 错误分类:NotFound/PortInUse(EADDRINUSE/`Address already in use` 实测识别)/Spawn/Exited/Timeout;编译错(`error:` 行)非致命持续收集到 `session.compileErrors`。`src/index.ts` `reportError()` 按类型给可操作文案(接 i18n),编译错成功后 showMessage 提示
 - [ ] preview tab + WebSocket SVG 渲染 —— 当前用 iframe 嵌 tinymist 自带前端(复用其 WASM 渲染 + 双向同步);自渲染 SVG delta 待策略 3 评估
 - [x] block → `main.typ` 物化(策略 1) —— `src/mapper/block-to-typ.ts`:`materializeDocToTyp(docId, pluginDataDir)` 经 `/api/export/exportMdContent`(yfm:false)拿 markdown,默认抽 `​```typst` 代码块拼成 main.typ(对齐 Clouder0 先例 + 思源里用 typst 代码块写 Typst 的实际用法),无 typst 块时降级为轻量 md→typst 转换(去 IAL);产物写 `<pluginDataDir>/tinymist-tmp/<rand>/main.typ`,返回 cleanup。`src/index.ts` 已去掉临时 prompt UX,改取 `getAllEditor()[0].protyle.block.rootID` 当前文档自动物化
 - [x] 入口锚点 4 层解析 + UI —— `src/mapper/anchor.ts`:`AnchorResolver` 4 层 resolve(IAL `custom-typst-root` 绝对路径 > 会话 pin > 自动探测占位 > 物化当前文档),IAL 经 `/api/attr/getBlockAttrs` 读、`/api/attr/setBlockAttrs` 写;preview tab 工具栏 pin 按钮(`src/preview/tab.ts`)弹菜单设/清会话 pin(`resolver.setPin/clearPin`),pin 高亮态随状态更新
 - [x] 设置页(tinymist 路径、端口、渲染模式) —— `src/settings/index.ts`:`setupSettings(plugin, i18n, onChange)` 经 `SettingUtils` 注册 4 项:`tinymistPath`(textinput,默认 `tinymist` 走 PATH)、`dataPlaneHost`(默认 `127.0.0.1:0` 随机端口)、`materializeMode`(select: code-blocks/markdown)、`extraArgs`(透传 `--invert-colors=auto` 等)。设置落 `<pluginData>/settings.json`。`src/index.ts` onload 调 setupSettings,onChange 回调实时重建 `TinymistManager`(运行中会话 stop,下次 openPreview 生效);`openSetting()` 重写调 `this.setting.open(name)`
-- [ ] 本地化(中英) —— i18n key 已起骨架,待补全
+- [x] 本地化(中英) —— `public/i18n/{en_US,zh_CN}.json` 覆盖:顶层(name/desktopOnly/loadingPlugin/byePlugin/openPreviewTab/previewTabTitle)、setting 段(4 设置项 + mode label)、errors 段(notFound/portInUse/noTypstContent/compileError/openDocFirst/timeout/exited);`index.ts` reportError + 编译错提示 + openDocFirst 全接 i18n(`as any` 绕 IObject 扁平类型)
 - [x] README + 使用文档 —— README.md/README_zh_CN.md 补:tinymist 安装(cargo/releases)、插件安装(marketplace/dev link)、使用(topbar 眼睛图标 + ⇧⌘P 命令)、物化模式(code-blocks/markdown)、入口锚点 4 层(IAL custom-typst-root / 会话 pin / 自动探测占位 / 物化默认)+ 文档属性参考表、设置页 4 项表、架构 src/ 树、排错 4 条、致谢、License
-- [ ] `package.zip` 打包验证(GitHub Release 附件流程)
+- [x] `package.zip` 打包验证 —— `pnpm run build` 产物经 `vite-plugin-zip-pack` 打包,实测含 10 文件(plugin.json/index.js/index.css/icon.png/preview.png/README*.md/i18n/*.json)符合思源市集规范,无多余;版本号 plugin.json==package.json 同步;CI `.github/workflows/release.yml` tag `v*` 触发 build + 上传 Release;流程文档化 `RELEASING.md`(本地验证/make-install/版本 bump/CI/市集待办)
 
 > 本机 QA 待办(纯代码侧无法完成):思源桌面端加载插件 → topbar 点开 → prompt 填一个真实 `.typ` → 确认 preview tab 显示 tinymist 渲染页;tinymist 二进制需本机预装(分发策略 §4 待决)。
 

@@ -1,7 +1,7 @@
 import { Plugin, showMessage, getFrontend, openTab, getAllEditor } from "siyuan";
 import "./index.scss";
 
-import { TinymistManager, TinymistNotFoundError, PreviewSession, TinymistManagerOptions } from "./tinymist/manager";
+import { TinymistManager, TinymistNotFoundError, TinymistPortInUseError, PreviewSession, TinymistManagerOptions } from "./tinymist/manager";
 import { createPreviewTabSpec, PREVIEW_TAB_TYPE, PreviewTabData } from "./preview/tab";
 import { AnchorResolver, AnchorError } from "./mapper/anchor";
 import { NoTypstContentError, MaterializedTyp } from "./mapper/block-to-typ";
@@ -133,7 +133,7 @@ export default class SiYuanTinymistPlugin extends Plugin {
 
         const docId = this.getCurrentDocId();
         if (!docId) {
-            showMessage(`[siyuan-tinymist] Please open a document first.`, 4000, "error");
+            showMessage(`[siyuan-tinymist] ${(this.i18n as any)?.errors?.openDocFirst ?? "Please open a document first."}`, 4000, "error");
             return;
         }
 
@@ -160,6 +160,18 @@ export default class SiYuanTinymistPlugin extends Plugin {
             console.log(`[tinymist] entry resolved via ${entry.source}: ${entry.entryFile}`);
             const session = await this.tinymist.start(entry.entryFile, entry.rootDir, 15000);
             this.openPreviewTab(session, docId);
+
+            // 编译错非致命(server 照起,preview 前端自渲染错误),仅提示用户检查源码。
+            if (session.compileErrors.length > 0) {
+                const first = session.compileErrors[0];
+                const head = (this.i18n as any)?.errors?.compileError ?? "Typst compiled with errors";
+                showMessage(
+                    `[siyuan-tinymist] ${head}: ${first}` +
+                        (session.compileErrors.length > 1 ? ` (+${session.compileErrors.length - 1})` : ""),
+                    6000,
+                    "error",
+                );
+            }
         } catch (err) {
             this.materialized?.cleanup();
             this.materialized = null;
@@ -201,14 +213,17 @@ export default class SiYuanTinymistPlugin extends Plugin {
         });
     }
 
-    /** 友好错误提示:tinymist 缺失/无 typst 内容/超时/退出分别给可操作文案。 */
+    /** 友好错误提示:tinymist 缺失/端口占用/无 typst 内容/锚点/超时/退出分别给可操作文案。 */
     private reportError(err: unknown): void {
         console.error(`[${this.name}] preview error:`, err);
+        const e = (this.i18n as any)?.errors ?? {};
         let msg: string;
         if (err instanceof TinymistNotFoundError) {
-            msg = `tinymist not found. Install it (e.g. \`cargo install tinymist\` or download from GitHub releases) and set the path in plugin settings.`;
+            msg = e.notFound ?? err.message;
+        } else if (err instanceof TinymistPortInUseError) {
+            msg = e.portInUse ?? err.message;
         } else if (err instanceof NoTypstContentError) {
-            msg = err.message;
+            msg = e.noTypstContent ?? err.message;
         } else if (err instanceof AnchorError) {
             msg = err.message;
         } else if (err instanceof Error) {

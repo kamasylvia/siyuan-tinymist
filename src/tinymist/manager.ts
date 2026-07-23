@@ -36,11 +36,18 @@ export interface PreviewSession {
     dataPlaneHost: string;
     /** 子进程 PID。 */
     pid: number;
+    /** 编译诊断收集器:start 后持续追加 tinymist 报告的编译错(stderr `error:` 行)。
+     *  非致命 —— server 照起,preview 前端自渲染错误;此处供 UI 侧栏提示。 */
+    compileErrors: string[];
 }
 
 /** tinymist preview 地址正则。容忍 log 行可能带时间戳/级别前缀。 */
 const STATIC_SERVER_RE = /Static file server listening on:\s*(\S+)/;
 const DATA_PLANE_RE = /Data plane server listening on:\s*(\S+)/;
+/** 端口占用(Rust panic `AddrInUse`,实测 tinymist v0.15.2 文案)。 */
+const ADDR_IN_USE_RE = /Address already in use|AddrInUse|EADDRINUSE/i;
+/** 编译错行(tinymist/typst `error:` 前缀,多行诊断的首行)。 */
+const COMPILE_ERROR_RE = /^error:\s*(.+)$/gm;
 
 /**
  * tinymist 子进程管理器。
@@ -126,11 +133,27 @@ export class TinymistManager {
             });
         });
 
-        // 解析 stdout/stderr 抓 preview 地址。tinymist log 可能走 stderr。
-        const ready = new Promise<PreviewSession>((resolve) => {
+        // 解析 stdout/stderr 抓 preview 地址 + 端口占用 + 编译诊断。
+        const compileErrors: string[] = [];
+        const ready = new Promise<PreviewSession>((resolve, reject) => {
             const onChunk = (chunk: Buffer | string) => {
                 const text = chunk.toString();
                 console.debug(`[tinymist] ${text.trimEnd()}`);
+
+                // 端口占用:tinymist 会 panic 退出,提前判给专门错误(替代模糊的 Exited)。
+                if (ADDR_IN_USE_RE.test(text)) {
+                    reject(new TinymistPortInUseError(this.opts.dataPlaneHost));
+                    return;
+                }
+
+                // 编译错:持续收集(非致命,server 照起),供 UI 侧栏提示。
+                const errs = text.match(COMPILE_ERROR_RE);
+                if (errs) {
+                    for (const e of errs) {
+                        compileErrors.push(e.trim());
+                    }
+                }
+
                 if (!this.session) {
                     const addrs = parsePreviewAddresses(text);
                     if (addrs) {
@@ -138,6 +161,7 @@ export class TinymistManager {
                             previewUrl: addrs.previewUrl,
                             dataPlaneHost: addrs.dataPlaneHost,
                             pid: child.pid ?? -1,
+                            compileErrors,
                         };
                         this.session = session;
                         resolve(session);
@@ -238,5 +262,16 @@ export class TinymistTimeoutError extends Error {
     constructor(message: string) {
         super(message);
         this.name = "TinymistTimeoutError";
+    }
+}
+
+/** 数据面/控制面端口被占(Rust panic AddrInUse)。 */
+export class TinymistPortInUseError extends Error {
+    constructor(host: string) {
+        super(
+            `port already in use for "${host}". ` +
+                `Set Preview server host:port to 127.0.0.1:0 (random) in settings, or free the occupied port.`,
+        );
+        this.name = "TinymistPortInUseError";
     }
 }

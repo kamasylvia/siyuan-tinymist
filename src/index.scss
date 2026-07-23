@@ -1,0 +1,27 @@
+/**
+ * siyuan-tinymist 样式。
+ * preview tab 的 iframe 容器铺满,错误态居中。
+ */
+
+.siyuan-tinymist-preview {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--b3-theme-background, #fff);
+}
+
+.siyuan-tinymist-preview__wrap {
+    flex: 1;
+    min-height: 0;
+}
+
+.siyuan-tinymist-preview__frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #fff;
+}
+
+.siyuan-tinymist-preview__error {
+    color: var(--b3-theme-on-surface, #999);
+}

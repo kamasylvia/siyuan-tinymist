@@ -181,7 +181,7 @@
 - [x] 入口锚点 4 层解析 + UI —— `src/mapper/anchor.ts`:`AnchorResolver` 4 层 resolve(IAL `custom-typst-root` 绝对路径 > 会话 pin > 自动探测占位 > 物化当前文档),IAL 经 `/api/attr/getBlockAttrs` 读、`/api/attr/setBlockAttrs` 写;preview tab 工具栏 pin 按钮(`src/preview/tab.ts`)弹菜单设/清会话 pin(`resolver.setPin/clearPin`),pin 高亮态随状态更新
 - [x] 设置页(tinymist 路径、端口、渲染模式) —— `src/settings/index.ts`:`setupSettings(plugin, i18n, onChange)` 经 `SettingUtils` 注册 4 项:`tinymistPath`(textinput,默认 `tinymist` 走 PATH)、`dataPlaneHost`(默认 `127.0.0.1:0` 随机端口)、`materializeMode`(select: code-blocks/markdown)、`extraArgs`(透传 `--invert-colors=auto` 等)。设置落 `<pluginData>/settings.json`。`src/index.ts` onload 调 setupSettings,onChange 回调实时重建 `TinymistManager`(运行中会话 stop,下次 openPreview 生效);`openSetting()` 重写调 `this.setting.open(name)`
 - [ ] 本地化(中英) —— i18n key 已起骨架,待补全
-- [ ] README + 使用文档
+- [x] README + 使用文档 —— README.md/README_zh_CN.md 补:tinymist 安装(cargo/releases)、插件安装(marketplace/dev link)、使用(topbar 眼睛图标 + ⇧⌘P 命令)、物化模式(code-blocks/markdown)、入口锚点 4 层(IAL custom-typst-root / 会话 pin / 自动探测占位 / 物化默认)+ 文档属性参考表、设置页 4 项表、架构 src/ 树、排错 4 条、致谢、License
 - [ ] `package.zip` 打包验证(GitHub Release 附件流程)
 
 > 本机 QA 待办(纯代码侧无法完成):思源桌面端加载插件 → topbar 点开 → prompt 填一个真实 `.typ` → 确认 preview tab 显示 tinymist 渲染页;tinymist 二进制需本机预装(分发策略 §4 待决)。

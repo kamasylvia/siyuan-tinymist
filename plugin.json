@@ -1,32 +1,26 @@
 {
-  "name": "plugin-sample-vite",
-  "author": "frostime",
-  "url": "https://github.com/siyuan-note/plugin-sample-vite-svelte",
-  "version": "0.4.1",
+  "name": "siyuan-tinymist",
+  "author": "kamasylvia",
+  "url": "https://github.com/kamasylvia/siyuan-tinymist",
+  "version": "0.1.0",
   "minAppVersion": "3.2.1",
   "backends": [
     "windows",
     "linux",
     "darwin",
-    "ios",
-    "android",
-    "harmony",
     "docker"
   ],
   "frontends": [
     "desktop",
-    "mobile",
-    "browser-desktop",
-    "browser-mobile",
     "desktop-window"
   ],
   "displayName": {
-    "en_US": "Plugin sample with vite",
-    "zh_CN": "插件样例 vite 版"
+    "en_US": "Tinymist Typst Preview",
+    "zh_CN": "Tinymist Typst 预览"
   },
   "description": {
-    "en_US": "SiYuan plugin sample with vite",
-    "zh_CN": "使用 vite 开发的思源插件样例"
+    "en_US": "Live Typst preview for SiYuan via embedded tinymist (LSP + preview server).",
+    "zh_CN": "通过内嵌 tinymist 为思源笔记提供 Typst 实时预览。"
   },
   "readme": {
     "en_US": "README.md",
@@ -38,8 +32,10 @@
     ]
   },
   "keywords": [
-    "plugin",
-    "sample",
-    "插件样例"
+    "typst",
+    "tinymist",
+    "preview",
+    "排版",
+    "Typst 预览"
   ]
 }

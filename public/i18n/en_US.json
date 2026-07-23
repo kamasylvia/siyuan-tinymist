@@ -1,20 +1,15 @@
 {
-    "addTopBarIcon": "Add a top bar icon by plugin",
-    "cancel": "Cancel",
-    "save": "Save",
-    "byeMenu": "Bye, Menu!",
-    "helloPlugin": "Hello, Plugin!",
-    "byePlugin": "Bye, Plugin!",
-    "showDialog": "Show dialog",
-    "removedData": "Data deleted",
-    "confirmRemove": "Confirm to delete the data in ${name}?",
-    "insertEmoji": "Insert Emoji",
-    "removeSpace": "Remove Space",
-    "getTab": "Print out all opened custom tabs in the debugger",
-    "name": "SiYuan",
-    "hello": {
-        "makesure": "Before using this template, please read the <a href=\"https://github.com/siyuan-note/plugin-sample\">offical sample</a>, make sure that you've known about the pipeline for plugin developing."
-    },
-    "hintTitle":"About",
-    "hintDesc":"<a href='https://github.com/siyuan-note/plugin-sample-vite-svelte'>plugin-sample-vite-svelte</a><br>@frostime<br>@88250<br>@zxkmm"
+    "name": "Tinymist Typst Preview",
+    "desktopOnly": "siyuan-tinymist only works on the desktop client (tinymist child process requires Node integration).",
+    "loadingPlugin": "Loading siyuan-tinymist...",
+    "byePlugin": "Goodbye, siyuan-tinymist!",
+    "openPreviewTab": "Open Typst Preview",
+    "previewTabTitle": "Typst Preview",
+    "setting": {
+        "title": "Tinymist Settings",
+        "tinymistPath": "tinymist executable path",
+        "tinymistPathDesc": "Path to the tinymist binary. Leave empty to use the bundled/downloaded one.",
+        "previewPort": "Preview server port",
+        "previewPortDesc": "Local port for the tinymist preview WebSocket server (0 = auto)."
+    }
 }

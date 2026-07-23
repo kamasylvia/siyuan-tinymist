@@ -1,11 +1,11 @@
 {
-  "name": "plugin-sample-vite",
-  "version": "0.4.1",
+  "name": "siyuan-tinymist",
+  "version": "0.1.0",
   "type": "module",
-  "description": "This is a sample plugin based on vite and svelte for Siyuan (https://b3log.org/siyuan)",
-  "repository": "https://github.com/frostime/plugin-sample-vite",
-  "homepage": "",
-  "author": "frostime",
+  "description": "Live Typst preview plugin for SiYuan via embedded tinymist (LSP + preview server)",
+  "repository": "https://github.com/kamasylvia/siyuan-tinymist",
+  "homepage": "https://github.com/kamasylvia/siyuan-tinymist",
+  "author": "kamasylvia",
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development VITE_SOURCEMAP=inline vite build --watch",

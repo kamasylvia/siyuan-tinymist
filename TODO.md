@@ -6,6 +6,25 @@
 
 ---
 
+## ⏸ 项目已中止（2026-07-23）
+
+**中止原因**：思源文件树设计上只渲染 `.sy` 文档节点，不显示 `.typ` 文件或任意文件夹（思源是 block-granular 笔记库，非文件系统浏览器）。这导致多文件 Typst 项目无法在思源内自然管理，与「在思源里完整写 Typst 项目」的初衷冲突。单文件/代码块场景虽已实现，但不足以支撑项目目标。
+
+**已完成（代码全在 GitHub `kamasylvia/siyuan-tinymist`，可恢复）**：
+- §3 模板清理（commit `5789920`）
+- §4 功能 A 完整交付 10/10：tinymist 进程管理、preview tab(iframe 嵌 reflexo)、block→main.typ 物化、入口锚点 4 层、设置页、错误处理(EADDRINUSE/编译错)、桌面守卫、本地化、README、package.zip 打包
+- tinymist 二进制自动下载（fetcher，SHA256 校验）
+- §8 决策落地（preview 容器=iframe 定论、CI 就位）
+- 自动化验证全通过（tinymist spawn/stdout 正则/HTTP 200/kernel API/物化链路/SHA256 match）
+
+**未完成**：
+- §6 GUI QA（思源桌面端到端，需启用插件——未做）
+- §5 功能 B（LSP）—— 未写实现代码（依赖已回滚）
+
+**中止清理**：kill dev watch 进程、删测试文档 `tinymist-qa-test`、回滚 `vscode-languageserver-protocol` 依赖、清 `/tmp` 临时目录。`/Volumes/Ext SSD/bin/tinymist`（手动下二进制）保留。
+
+---
+
 ## 0. 项目目标
 
 给思源笔记加 Typst 实时预览能力,通过嵌入 tinymist(Typst LSP + preview server)实现。

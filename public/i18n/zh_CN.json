@@ -1,16 +1,22 @@
 {
     "name": "Tinymist Typst 预览",
     "desktopOnly": "siyuan-tinymist 仅在桌面端可用(tinymist 子进程需要 Node 集成)。",
-    "loadingPlugin": "正在加载 siyuan-tinymist...",
+    "loadingPlugin": "正在启动 tinymist...",
     "byePlugin": "再见,siyuan-tinymist!",
     "openPreviewTab": "打开 Typst 预览",
     "previewTabTitle": "Typst 预览",
     "setting": {
         "title": "Tinymist 设置",
         "tinymistPath": "tinymist 可执行文件路径",
-        "tinymistPathDesc": "tinymist 二进制路径。留空则使用内置/下载的版本。",
-        "previewPort": "预览服务端口",
-        "previewPortDesc": "tinymist 预览 WebSocket 服务的本地端口(0 = 自动)。",
+        "tinymistPathDesc": "tinymist 二进制路径。留作 'tinymist' 则用 PATH 查找。",
+        "previewPort": "预览服务 host:port",
+        "previewPortDesc": "数据面绑定地址。用 127.0.0.1:0 取随机端口。",
+        "materializeMode": "物化模式",
+        "materializeModeDesc": "思源文档如何变成 main.typ。code-blocks:提取 ```typst 代码块;markdown:轻量 md→typst 转换。",
+        "modeCodeBlocks": "code-blocks(提取 typst 代码块)",
+        "modeMarkdown": "markdown(轻量 md→typst)",
+        "extraArgs": "额外 tinymist CLI 参数",
+        "extraArgsDesc": "透传给 `tinymist preview` 的额外参数,空格分隔(如 --invert-colors=auto)。",
         "save": "保存",
         "cancel": "取消"
     }

@@ -1,15 +1,23 @@
 {
     "name": "Tinymist Typst Preview",
     "desktopOnly": "siyuan-tinymist only works on the desktop client (tinymist child process requires Node integration).",
-    "loadingPlugin": "Loading siyuan-tinymist...",
+    "loadingPlugin": "Starting tinymist...",
     "byePlugin": "Goodbye, siyuan-tinymist!",
     "openPreviewTab": "Open Typst Preview",
     "previewTabTitle": "Typst Preview",
     "setting": {
         "title": "Tinymist Settings",
         "tinymistPath": "tinymist executable path",
-        "tinymistPathDesc": "Path to the tinymist binary. Leave empty to use the bundled/downloaded one.",
-        "previewPort": "Preview server port",
-        "previewPortDesc": "Local port for the tinymist preview WebSocket server (0 = auto)."
+        "tinymistPathDesc": "Path to the tinymist binary. Leave as 'tinymist' to use PATH.",
+        "previewPort": "Preview server host:port",
+        "previewPortDesc": "Data-plane bind address. Use 127.0.0.1:0 for a random port.",
+        "materializeMode": "Materialize mode",
+        "materializeModeDesc": "How a SiYuan doc becomes main.typ. code-blocks: extract ```typst blocks; markdown: light md→typst conversion.",
+        "modeCodeBlocks": "code-blocks (extract typst blocks)",
+        "modeMarkdown": "markdown (light md→typst)",
+        "extraArgs": "Extra tinymist CLI args",
+        "extraArgsDesc": "Space-separated extra args passed to `tinymist preview` (e.g. --invert-colors=auto).",
+        "save": "Save",
+        "cancel": "Cancel"
     }
 }

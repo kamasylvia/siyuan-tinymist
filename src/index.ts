@@ -1,10 +1,11 @@
 import { Plugin, showMessage, getFrontend, openTab, getAllEditor } from "siyuan";
 import "./index.scss";
 
-import { TinymistManager, TinymistNotFoundError, PreviewSession } from "./tinymist/manager";
+import { TinymistManager, TinymistNotFoundError, PreviewSession, TinymistManagerOptions } from "./tinymist/manager";
 import { createPreviewTabSpec, PREVIEW_TAB_TYPE, PreviewTabData } from "./preview/tab";
 import { AnchorResolver, AnchorError } from "./mapper/anchor";
 import { NoTypstContentError, MaterializedTyp } from "./mapper/block-to-typ";
+import { setupSettings, PluginSettings, DEFAULT_SETTINGS } from "./settings";
 
 /**
  * siyuan-tinymist
@@ -27,6 +28,8 @@ export default class SiYuanTinymistPlugin extends Plugin {
     private tinymist: TinymistManager | null = null;
     /** 入口锚点解析器(4 层:IAL > pin > 自动探测 > 物化)。 */
     private resolver: AnchorResolver | null = null;
+    /** 当前生效设置(合并默认值)。 */
+    private settings: PluginSettings = { ...DEFAULT_SETTINGS };
     /** 当前物化产物 cleanup;重物化/卸载时调。 */
     private materialized: MaterializedTyp | null = null;
 
@@ -46,7 +49,10 @@ export default class SiYuanTinymistPlugin extends Plugin {
             return;
         }
 
-        this.tinymist = new TinymistManager();
+        // 设置页(SettingUtils 接管 this.setting)。存 this.data 防实例被 GC(元素 onchange 闭包依赖它)。
+        this.data.__settingUtils = await setupSettings(this, this.i18n, (next) => this.onSettingsChange(next));
+
+        this.applySettingsToManagers();
         this.resolver = new AnchorResolver({ pluginDataDir: this.data.basePath });
 
         // topbar 按钮:点击触发 preview 当前文档。
@@ -74,12 +80,40 @@ export default class SiYuanTinymistPlugin extends Plugin {
     }
 
     onunload() {
-        console.log(`[${this.name}] onunload`);
+        console.log(`[${this.name}] onunload; settings=`, this.settings);
         // 显式 kill tinymist,防僵尸进程(TODO.md §6)。
         this.tinymist?.stop();
         // 清理物化临时文件。
         this.materialized?.cleanup();
         this.materialized = null;
+    }
+
+    /** 打开插件设置页(SettingUtils 构造时已 new Setting 赋给 this.setting)。 */
+    openSetting(): void {
+        this.setting.open(this.name);
+    }
+
+    /** 设置变更:更新内存值 + 重建 manager(tinymistPath/host/extraArgs 改动需新会话生效)。 */
+    private onSettingsChange(next: PluginSettings): void {
+        this.settings = next;
+        this.applySettingsToManagers();
+    }
+
+    /** 据当前 settings 重建 TinymistManager(旧会话若在跑会被替换;下次 openPreview 用新配置)。 */
+    private applySettingsToManagers(): void {
+        const opts: TinymistManagerOptions = {
+            binaryPath: this.settings.tinymistPath || undefined,
+            dataPlaneHost: this.settings.dataPlaneHost || undefined,
+            extraArgs: this.settings.extraArgs ? this.settings.extraArgs.split(/\s+/).filter(Boolean) : undefined,
+        };
+        // 若有运行中会话,设置改动需重启才生效 —— 停旧 manager,下次 openPreview 用新实例。
+        if (this.tinymist?.isRunning()) {
+            console.log(`[tinymist] settings changed; stopping running session to apply on next preview`);
+            this.tinymist.stop();
+            this.materialized?.cleanup();
+            this.materialized = null;
+        }
+        this.tinymist = new TinymistManager(opts);
     }
 
     /**

@@ -90,7 +90,12 @@ export class TinymistManager {
             "preview",
             entryFile,
             "--data-plane-host=" + this.opts.dataPlaneHost,
-            "--partial-rendering",
+            // tinymist v0.13+ 需显式 =true;早期文档示例写裸 flag 会报
+            // "a value is required for '--partial-rendering'"。
+            "--partial-rendering=true",
+            // 禁掉默认开浏览器行为 —— preview 在思源 tab 内用 iframe 呈现,
+            // 不应弹系统浏览器(否则每次 spawn 都开一个浏览器窗口)。
+            "--no-open",
             ...this.opts.extraArgs,
         ];
 

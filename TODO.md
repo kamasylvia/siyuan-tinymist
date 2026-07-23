@@ -177,7 +177,7 @@
 - [x] 仅桌面端守卫 —— `getFrontend()` 判 desktop/desktop-window,移动端只 showMessage 不挂功能
 - [x] 错误处理(起步) —— `reportError()` 按 `TinymistNotFoundError` 等给可操作文案
 - [ ] preview tab + WebSocket SVG 渲染 —— 当前用 iframe 嵌 tinymist 自带前端(复用其 WASM 渲染 + 双向同步);自渲染 SVG delta 待策略 3 评估
-- [ ] block → `main.typ` 物化(策略 1) —— 待落地 `src/mapper/block-to-typ.ts`,当前需用户手填 `.typ` 入口
+- [x] block → `main.typ` 物化(策略 1) —— `src/mapper/block-to-typ.ts`:`materializeDocToTyp(docId, pluginDataDir)` 经 `/api/export/exportMdContent`(yfm:false)拿 markdown,默认抽 `​```typst` 代码块拼成 main.typ(对齐 Clouder0 先例 + 思源里用 typst 代码块写 Typst 的实际用法),无 typst 块时降级为轻量 md→typst 转换(去 IAL);产物写 `<pluginDataDir>/tinymist-tmp/<rand>/main.typ`,返回 cleanup。`src/index.ts` 已去掉临时 prompt UX,改取 `getAllEditor()[0].protyle.block.rootID` 当前文档自动物化
 - [ ] 入口锚点 4 层解析 + UI —— 待落地 `src/mapper/anchor.ts`
 - [ ] 设置页(tinymist 路径、端口、渲染模式) —— `src/libs/setting-utils.ts` 已留,待接
 - [ ] 本地化(中英) —— i18n key 已起骨架,待补全

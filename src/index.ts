@@ -1,8 +1,9 @@
-import { Plugin, showMessage, getFrontend, openTab } from "siyuan";
+import { Plugin, showMessage, getFrontend, openTab, getAllEditor } from "siyuan";
 import "./index.scss";
 
 import { TinymistManager, TinymistNotFoundError, PreviewSession } from "./tinymist/manager";
 import { createPreviewTabSpec, PREVIEW_TAB_TYPE, PreviewTabData } from "./preview/tab";
+import { materializeDocToTyp, MaterializedTyp, NoTypstContentError } from "./mapper/block-to-typ";
 
 /**
  * siyuan-tinymist
@@ -23,8 +24,8 @@ export default class SiYuanTinymistPlugin extends Plugin {
     private isDesktop: boolean = true;
     /** tinymist 进程管理器(仅桌面端实例化)。 */
     private tinymist: TinymistManager | null = null;
-    /** 当前 preview 会话。 */
-    private session: PreviewSession | null = null;
+    /** 当前物化产物 cleanup;重物化/卸载时调。 */
+    private materialized: MaterializedTyp | null = null;
 
     async onload() {
         const frontEnd = getFrontend();
@@ -72,17 +73,22 @@ export default class SiYuanTinymistPlugin extends Plugin {
         console.log(`[${this.name}] onunload`);
         // 显式 kill tinymist,防僵尸进程(TODO.md §6)。
         this.tinymist?.stop();
-        this.session = null;
+        // 清理物化临时文件。
+        this.materialized?.cleanup();
+        this.materialized = null;
     }
 
     /**
      * 对当前打开的文档启动 preview。
      *
-     * 起步阶段(策略 1,单文件):要求用户已用思源导出/或外部放好一个 `.typ` 入口文件,
-     * 此处先以「占位入口」跑通 spawn → ws → iframe 链路。block → main.typ 物化
-     * (TODO.md §4 落点 `src/mapper/block-to-typ.ts`)落地后替换此处。
+     * 策略 1(单文件 = 一 Typst 入口):
+     * 1. 取当前文档 rootID(经 `getAllEditor`)。
+     * 2. `materializeDocToTyp` 物化成 `<pluginDataDir>/tinymist-tmp/<rand>/main.typ`
+     *    (默认抽 `​```typst` 代码块;无则报 NoTypstContentError)。
+     * 3. `TinymistManager.start` spawn tinymist preview 该入口。
+     * 4. openTab 打开 preview tab。
      *
-     * 当前实现:弹对话框让用户填 `.typ` 入口绝对路径(临时 UX,验证链路用)。
+     * 重物化(文档变了/再次点击):先 stop 旧会话 + cleanup 旧临时文件。
      */
     private async openPreviewForCurrentDoc(): Promise<void> {
         if (!this.isDesktop || !this.tinymist) {
@@ -90,27 +96,46 @@ export default class SiYuanTinymistPlugin extends Plugin {
             return;
         }
 
-        // 临时 UX:提示用户填入口路径。后续阶段接 block 物化后改为自动取当前文档。
-        const entryFile = await this.askEntryFile();
-        if (!entryFile) {
+        const docId = this.getCurrentDocId();
+        if (!docId) {
+            showMessage(`[siyuan-tinymist] Please open a document first.`, 4000, "error");
             return;
         }
 
-        // 若已有会话且入口相同,直接聚焦已开 tab。
-        if (this.session) {
-            this.openPreviewTab(this.session);
-            return;
-        }
+        // 清场:停旧会话 + 删旧物化产物,保证「当前文档」语义。
+        this.tinymist.stop();
+        this.materialized?.cleanup();
+        this.materialized = null;
 
         showMessage(this.i18n.loadingPlugin ?? "Starting tinymist...", 3000);
 
         try {
-            const session = await this.tinymist.start(entryFile, undefined, 15000);
-            this.session = session;
+            const typ = await materializeDocToTyp(docId, this.data.basePath);
+            this.materialized = typ;
+
+            const session = await this.tinymist.start(typ.entryPath, typ.rootDir, 15000);
             this.openPreviewTab(session);
         } catch (err) {
+            // 物化/spawn 失败时清掉已建的临时产物。
+            this.materialized?.cleanup();
+            this.materialized = null;
             this.reportError(err);
         }
+    }
+
+    /**
+     * 取当前聚焦文档的 rootID。
+     *
+     * 优先取 `getAllEditor()` 第一个 editor(当前打开的文档);无 editor 返回 null。
+     * (后续入口锚点 4 层解析落地时,这里会接入 IAL 提示 / 手动 pin 优先级。)
+     */
+    private getCurrentDocId(): string | null {
+        const editors = getAllEditor();
+        if (editors.length === 0) {
+            return null;
+        }
+        const rootID = editors[0].protyle?.block?.rootID;
+        return rootID ?? null;
     }
 
     /** 打开(或聚焦)preview tab。 */
@@ -130,29 +155,14 @@ export default class SiYuanTinymistPlugin extends Plugin {
         });
     }
 
-    /** 临时 UX:弹原生 prompt 让用户输入 `.typ` 入口绝对路径。后续阶段替换为自定义 Dialog + block 物化。 */
-    private askEntryFile(): Promise<string | null> {
-        return new Promise((resolve) => {
-            // 思源 renderer(Electron)有全局 prompt。起步阶段够用。
-            const input = window.prompt(
-                "[siyuan-tinymist] Enter absolute path to the Typst entry file (e.g. /abs/path/main.typ):",
-                "",
-            );
-            if (input === null) {
-                resolve(null);
-            } else {
-                const trimmed = input.trim();
-                resolve(trimmed.length > 0 ? trimmed : null);
-            }
-        });
-    }
-
-    /** 友好错误提示:tinymist 缺失/超时/退出分别给可操作文案。 */
+    /** 友好错误提示:tinymist 缺失/无 typst 内容/超时/退出分别给可操作文案。 */
     private reportError(err: unknown): void {
         console.error(`[${this.name}] preview error:`, err);
         let msg: string;
         if (err instanceof TinymistNotFoundError) {
             msg = `tinymist not found. Install it (e.g. \`cargo install tinymist\` or download from GitHub releases) and set the path in plugin settings.`;
+        } else if (err instanceof NoTypstContentError) {
+            msg = err.message;
         } else if (err instanceof Error) {
             msg = err.message;
         } else {
